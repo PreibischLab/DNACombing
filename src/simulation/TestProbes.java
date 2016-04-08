@@ -1,6 +1,5 @@
 package simulation;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,38 +10,14 @@ public class TestProbes
 {
 	public static enum MatchResult{ CORRECT, AMBIVALENT, WRONG, NO_MATCH, NOT_ENOUGH_PROBES };
 
-	public static ArrayList< CombingProbe > loadFile( final File file ) throws IOException
-	{
-		final BufferedReader in = TextFileAccess.openFileRead( file );
-		final ArrayList< CombingProbe > probes = new ArrayList< CombingProbe >();
-
-		while ( in.ready() )
-		{
-			final String line = in.readLine().trim();
-
-			if ( line.matches( "P[0-9]+.*" ) )
-			{
-				final String[] elements = line.split( ";" );
-				
-				if ( elements.length < 4 )
-					continue;
-
-				final int id = Integer.parseInt( elements[ 0 ].substring( 1, elements[ 0 ].length() ) );
-				final int chr = Integer.parseInt( elements[ 1 ].substring( 3, elements[ 1 ].length() ) );
-				final long start = Long.parseLong( elements[ 2 ] );
-				final long end = Long.parseLong( elements[ 3 ] );
-
-				probes.add( new CombingProbe( id, chr, start, end ) );
-			}
-		}
-
-		return probes;
-	}
-
-	public static void randomlySample( final ArrayList< CombingProbe > probes, final long length, final boolean mirror )
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final boolean mirror )
 	{
 		final Random rnd = new Random( 35 );
+		return randomlySample( probes, length, iterations, mirror, rnd );
+	}
 
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final boolean mirror, final Random rnd )
+	{
 		long min = probes.get( 0 ).start();
 		long max = probes.get( 0 ).end();
 
@@ -57,7 +32,7 @@ public class TestProbes
 		final long size = max - min + 1;
 
 		// histogram of how many probes are hit
-		final int[] containsHist = new int[ 10 ];
+		//final int[] containsHist = new int[ 100 ];
 
 		// the distances
 		final double[] distGMCs = new double[ probes.size() - 1 ];
@@ -72,7 +47,7 @@ public class TestProbes
 		// histogram of how many probes are hit
 		final int[] resultHist = new int[ MatchResult.values().length ];
 
-		for ( int i = 0; i < 10000; ++i )
+		for ( int i = 0; i < iterations; ++i )
 		{
 			final long from = Math.round( rnd.nextDouble() * size ) + min;
 			final long to = from + length;
@@ -86,7 +61,7 @@ public class TestProbes
 			//if ( contained.size() == 0 )
 			//	System.out.println( from + " >>> " + to );
 
-			++containsHist[ contained.size() ];
+			//++containsHist[ contained.size() ];
 
 			final MatchResult m;
 
@@ -123,11 +98,12 @@ public class TestProbes
 		//	System.out.println( containsHist[ i ] );
 
 		
-		for ( int i = 0; i < resultHist.length; ++i )
-			System.out.println( /*MatchResult.values()[ i ] + ": " + */ resultHist[ i ] );
+		//for ( int i = 0; i < resultHist.length; ++i )
+		//	System.out.println( /*MatchResult.values()[ i ] + ": " + */ resultHist[ i ] );
 		
-		System.out.println();
+		//System.out.println();
 
+		return resultHist;
 	}
 
 	public static MatchResult match( final double[] distGMCs, final double distDetect[], final double maxErrorPx, final int correctMatch, final boolean mirror, final boolean debug )
@@ -221,16 +197,18 @@ public class TestProbes
 	public static void main( String[] args ) throws IOException
 	{
 		//System.out.println( new String( "Probe Id;Chromosome;Begin;End;Gap length" ).matches( "Hello" ) );
-		for ( int i = 1; i <= 10; ++i )
+		for ( int i = 2; i <= 2; ++i )
 		{
-		ArrayList< CombingProbe > probes = loadFile( new File( "GMC_" + i + ".csv" )  );
-
-		Collections.sort( probes );
-
-		//for ( final CombingProbe p : probes )
-		//	System.out.println( p );
-
-		randomlySample( probes, 400000, true );
+			ArrayList< CombingProbe > probes = CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i );
+	
+			Collections.sort( probes );
+	
+			System.out.println( probes.size() + " probes total." );
+			
+			//for ( final CombingProbe p : probes )
+			//	System.out.println( p );
+	
+			System.out.println( randomlySample( probes, 400000, 10000, true )[ 0 ] );
 		}
 	}
 

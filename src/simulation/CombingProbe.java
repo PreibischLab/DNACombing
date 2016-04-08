@@ -1,21 +1,29 @@
 package simulation;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+
 public class CombingProbe implements Comparable< CombingProbe >
 {
 	//P2;chr7;116062000;116074000;50
 
+	final int gmcId;
 	final int id;
 	final int chr;
 	final long start, end;
 
-	public CombingProbe( final int id, final int chr, final long start, final long end )
+	public CombingProbe( final int gmcId, final int id, final int chr, final long start, final long end )
 	{
+		this.gmcId = gmcId;
 		this.id = id;
 		this.chr = chr;
 		this.start = start;
 		this.end = end;
 	}
 
+	public int gmcId() { return gmcId; }
 	public int id() { return id; }
 	public int chr() { return chr; }
 	public long start() { return start; }
@@ -54,5 +62,33 @@ public class CombingProbe implements Comparable< CombingProbe >
 	}
 
 	@Override
-	public String toString() { return "P" + id() + ";chr" + chr() + ";" + start + ";" + end() + ";l=" + length() + " (" + inPixels() + "px)"; }
+	public String toString() { return "GMC" + gmcId() + ";P" + id() + ";chr" + chr() + ";" + start + ";" + end() + ";l=" + length() + " (" + inPixels() + "px)"; }
+
+	public static ArrayList< CombingProbe > loadFile( final File file, final int gmcId ) throws IOException
+	{
+		final BufferedReader in = TextFileAccess.openFileRead( file );
+		final ArrayList< CombingProbe > probes = new ArrayList< CombingProbe >();
+
+		while ( in.ready() )
+		{
+			final String line = in.readLine().trim();
+
+			if ( line.matches( "P[0-9]+.*" ) )
+			{
+				final String[] elements = line.split( ";" );
+				
+				if ( elements.length < 4 )
+					continue;
+
+				final int id = Integer.parseInt( elements[ 0 ].substring( 1, elements[ 0 ].length() ) );
+				final int chr = Integer.parseInt( elements[ 1 ].substring( 3, elements[ 1 ].length() ) );
+				final long start = Long.parseLong( elements[ 2 ] );
+				final long end = Long.parseLong( elements[ 3 ] );
+
+				probes.add( new CombingProbe( gmcId, id, chr, start, end ) );
+			}
+		}
+
+		return probes;
+	}
 }
