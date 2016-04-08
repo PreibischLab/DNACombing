@@ -113,14 +113,49 @@ A:			do
 				random = rnd;
 
 			final Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > local = iterate( allProbes, probeset, combingLength, minDistanceProbes, testIterations, nBest, random );
-			
-			bestInt.addAll( local.getA() );
-			bestProbes.addAll( local.getB() );
+
+			for ( int i = 0; i < local.getA().size(); ++i )
+			{
+				if ( !contains( bestProbes, local.getB().get( i ) ) )
+				{
+					bestInt.add( local.getA().get( i ) );
+					bestProbes.add( local.getB().get( i ) );
+				}
+			}
 		}
 
 		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
 	}
+
+	public static boolean contains( final ArrayList< ArrayList< CombingProbe > > all, final ArrayList< CombingProbe > add )
+	{
+		if ( all.size() == 0 )
+			return false;
+
+		for ( int i = 0; i < all.size(); ++i )
+		{
+			final ArrayList< CombingProbe > oldP = new ArrayList< CombingProbe >();
+			final ArrayList< CombingProbe > newP = new ArrayList< CombingProbe >();
 	
+			oldP.addAll( all.get( i ) );
+			newP.addAll( add );
+
+			Collections.sort( oldP );
+			Collections.sort( newP );
+
+			for ( int x = 0; x < oldP.size(); ++x )
+			{
+				final CombingProbe o1 = oldP.get( x );
+				final CombingProbe o2 = newP.get( x );
+
+				if ( o1.chr() != o2.chr() || o1.id() != o2.id() )
+					return false;
+			}
+		}
+
+		return true;
+	}
+
 	public static Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > iterate(
 			final ArrayList< CombingProbe > allProbes,
 			final ArrayList< CombingProbe > probes,
@@ -133,25 +168,16 @@ A:			do
 		final ArrayList< Integer > bestInt = new ArrayList< Integer >();
 		final ArrayList< ArrayList< CombingProbe > > bestProbes = new ArrayList< ArrayList<CombingProbe> >();
 
-		// keep the original version
-		//bestInt.add( TestProbes.randomlySample( probes, combingLength, testIterations, true, rnd )[ 0 ] );
-		//bestProbes.add( probes );
-
 		for ( int i = 0; i < nBest; ++i )
 		{
 			bestInt.add( -1 );
 			bestProbes.add( new ArrayList< CombingProbe >() );
 		}
 
-		final ArrayList< CombingProbe > allProbesCopy = new ArrayList< CombingProbe >();
-
 		for ( int i = 0; i < probes.size(); ++i )
 		{
 A:			for ( int j = 0; j < allProbes.size(); ++j )
 			{
-				allProbesCopy.clear();
-				allProbesCopy.addAll( allProbes );
-	
 				final ArrayList< CombingProbe > selectedProbes = new ArrayList< CombingProbe >();
 				selectedProbes.addAll( probes );
 				selectedProbes.remove( i );
@@ -169,6 +195,94 @@ A:			for ( int j = 0; j < allProbes.size(); ++j )
 
 				sortIntoList( r, selectedProbes, bestInt, bestProbes );
 			}
+		}
+
+		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
+	}
+
+	public static Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > exchangeAll(
+			final ArrayList< CombingProbe > allProbes,
+			final ArrayList<ArrayList<CombingProbe>> probes,
+			final int numProbes,
+			final int combingLength,
+			final double minDistanceProbes,
+			final int numIterations,
+			final int testIterations,
+			final int nBest,
+			final Random rnd )
+
+	{
+		final ArrayList< Integer > bestInt = new ArrayList< Integer >();
+		final ArrayList< ArrayList< CombingProbe > > bestProbes = new ArrayList< ArrayList<CombingProbe> >();
+
+		for ( final ArrayList< CombingProbe > probeset : probes )
+		{
+			final Random random;
+			
+			if ( rnd == null )
+				random = new Random( 35 );
+			else
+				random = rnd;
+
+			final Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > local = exchange( allProbes, probeset, numProbes, combingLength, minDistanceProbes, numIterations, testIterations, nBest, random );
+
+			for ( int i = 0; i < local.getA().size(); ++i )
+			{
+				if ( !contains( bestProbes, local.getB().get( i ) ) )
+				{
+					bestInt.add( local.getA().get( i ) );
+					bestProbes.add( local.getB().get( i ) );
+				}
+			}
+		}
+
+		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
+	}
+
+	public static Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > exchange(
+			final ArrayList< CombingProbe > allProbes,
+			final ArrayList< CombingProbe > probes,
+			final int numProbes,
+			final int combingLength,
+			final double minDistanceProbes,
+			final int numIterations,
+			final int testIterations,
+			final int nBest,
+			final Random rnd )
+	{
+		final ArrayList< Integer > bestInt = new ArrayList< Integer >();
+		final ArrayList< ArrayList< CombingProbe > > bestProbes = new ArrayList< ArrayList<CombingProbe> >();
+
+		for ( int i = 0; i < nBest; ++i )
+		{
+			bestInt.add( -1 );
+			bestProbes.add( new ArrayList< CombingProbe >() );
+		}
+
+		for ( int i = 0; i < numIterations; ++i )
+		{
+			final ArrayList< CombingProbe > selectedProbes = new ArrayList< CombingProbe >();
+			selectedProbes.addAll( probes );
+
+			for ( int j = 0; j < numProbes; ++j )
+				selectedProbes.remove( rnd.nextInt( selectedProbes.size() ) );
+
+A:			do
+			{
+				final CombingProbe p = allProbes.get( rnd.nextInt( allProbes.size() ) );
+
+				// too close to one of the probes?
+				for ( final CombingProbe q : selectedProbes )
+					if ( p.distanceTo( q ) / CombingProbe.nucleotidesPerPixel() < minDistanceProbes )
+						continue A;
+
+				selectedProbes.add( p );
+			}
+			while( selectedProbes.size() < probes.size() );
+
+			final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, true, rnd )[ 0 ];
+
+			sortIntoList( r, selectedProbes, bestInt, bestProbes );
 		}
 
 		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
@@ -257,8 +371,13 @@ A:			for ( int j = 0; j < allProbes.size(); ++j )
 		for ( int x = 0; x < 100; ++x )
 		{
 			System.out.print( x +": " );
-			best = iterateAll( allProbes, best.getB(), combingLength, minDistanceProbes, testIterations, nBestFilter, rnd );
 
+			if ( x % 10 == 9 )
+				best = exchangeAll( allProbes, best.getB(), 2, combingLength, minDistanceProbes, 1000, testIterations, nBestFilter, rnd );
+			else
+				best = iterateAll( allProbes, best.getB(), combingLength, minDistanceProbes, testIterations, nBestFilter, rnd );
+
+			
 			System.out.print( best.getA().get( 0 ) + " >>> " );
 
 			//for ( int i = 0; i < best.getA().size(); ++i )
