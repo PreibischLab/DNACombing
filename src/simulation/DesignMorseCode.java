@@ -2,6 +2,7 @@ package simulation;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -368,16 +369,37 @@ A:			do
 		int bestAll = -1;
 		ArrayList< CombingProbe > bestProbesAll = null;
 
-		for ( int x = 0; x < 100; ++x )
+		int noChange = 0;
+		int noBetter = 0;
+		int last = -1;
+
+		for ( int x = 0; x < 100000; ++x )
 		{
 			System.out.print( x +": " );
 
-			if ( x % 10 == 9 )
-				best = exchangeAll( allProbes, best.getB(), 2, combingLength, minDistanceProbes, 1000, testIterations, nBestFilter, rnd );
-			else
-				best = iterateAll( allProbes, best.getB(), combingLength, minDistanceProbes, testIterations, nBestFilter, rnd );
+			if ( noChange >= 5 || noBetter >= 50 )
+			{
+				noChange = 0;
+				noBetter = 0;
+				final int ex = Math.max(  2, rnd.nextInt(numProbes-1) );
+				System.out.print( "ex=" + ex + " " );
+				best = exchangeAll( allProbes, best.getB(), ex, combingLength, minDistanceProbes, 1000, testIterations, nBestFilter, rnd );
 
-			
+				// every third time put the best one back in
+				if ( rnd.nextInt( 3 ) == 0 )
+				{
+					final ArrayList< CombingProbe > bestP = new ArrayList< CombingProbe >();
+					bestP.addAll( bestProbesAll );
+					best.getA().add( bestAll );
+					best.getB().add( bestP );
+					System.out.print( "best back " );
+				}
+			}
+			else
+			{
+				best = iterateAll( allProbes, best.getB(), combingLength, minDistanceProbes, testIterations, nBestFilter, rnd );
+			}
+
 			System.out.print( best.getA().get( 0 ) + " >>> " );
 
 			//for ( int i = 0; i < best.getA().size(); ++i )
@@ -387,8 +409,19 @@ A:			do
 
 			System.out.print( best.getA().get( 0 ) );
 
-			//for ( int i = 0; i < best.getA().size(); ++i )
-			//	System.out.println( best.getA().get( i ) );
+			if ( last == best.getA().get( 0 ) )
+			{
+				++noChange;
+				++noBetter;
+			}
+			else
+			{
+				noChange = 0;
+				last = best.getA().get( 0 );
+			}
+
+			if ( best.getA().get( 0 ) < bestAll )
+				++noBetter;
 
 			if ( best.getA().get( 0 ) > bestAll )
 			{
@@ -396,6 +429,7 @@ A:			do
 				bestProbesAll = new ArrayList< CombingProbe >();
 				bestProbesAll.addAll( best.getB().get( 0 ) );
 				System.out.println( ", new best." );
+				noBetter = 0;
 			}
 			else
 			{
