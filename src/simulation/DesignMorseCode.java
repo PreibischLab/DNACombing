@@ -149,7 +149,7 @@ A:			do
 				final CombingProbe o1 = oldP.get( x );
 				final CombingProbe o2 = newP.get( x );
 
-				if ( o1.chr() != o2.chr() || o1.id() != o2.id() )
+				if ( o1.gmcId() != o2.gmcId() || o1.id() != o2.id() )
 					return false;
 			}
 		}
@@ -355,6 +355,23 @@ A:			do
 
 		System.out.println( "..." );
 		System.out.println( best.getA().get( best.getA().size() - 1 ) );
+
+		// TODO: hack - put it their design and improve on it
+		for ( int gmcId = 1; gmcId <= 10; ++gmcId )
+		{
+			final ArrayList< CombingProbe > designedProbes = new ArrayList< CombingProbe >();
+			
+			for ( final CombingProbe p : allProbes )
+				if ( p.gmcId() == gmcId )
+					designedProbes.add( p );
+	
+			if ( designedProbes.size() == numProbes )
+			{
+				System.out.println( "Adding designed probes gmcId=" + gmcId );
+				best.getA().add( 1 );
+				best.getB().add( designedProbes );
+			}
+		}
 
 		final int numIterationsFilter = 10000;
 		final int nBestFilter = 10;
