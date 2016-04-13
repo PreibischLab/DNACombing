@@ -18,6 +18,8 @@ public class TestProbes
 
 	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final boolean mirror, final Random rnd )
 	{
+		final double error = 5;
+
 		long min = probes.get( 0 ).start();
 		long max = probes.get( 0 ).end();
 
@@ -27,9 +29,9 @@ public class TestProbes
 			max = Math.max( Math.max( max, p.start() ), p.end() );
 		}
 
-		// only consider random segments that contain at least some part of the GMC area
-		min -= length;
-		final long size = max - min + 1;
+		// NOT ANYMORE: only consider random segments that contain at least some part of the GMC area
+		//min -= length;
+		final long size = max - min + 1 - length; // only consider probes that lie within the area
 
 		// histogram of how many probes are hit
 		//final int[] containsHist = new int[ 100 ];
@@ -72,7 +74,7 @@ public class TestProbes
 				for ( int j = 0; j < contained.size() - 1; ++j )
 					distDetect[ j ] = contained.get( j ).distanceTo( contained.get( j + 1 ) ) / CombingProbe.nucleotidesPerPixel();
 
-				final double maxError = Math.max( 1, rnd.nextGaussian() * 2 + 10 );
+				final double maxError = Math.max( 1, rnd.nextGaussian() * 2 + error );
 				m = match( distGMCs, distDetect, maxError, contained.get( 0 ).id() - 1, mirror, false ); // probe ID starts with 1, not 0
 
 				/*
@@ -197,18 +199,18 @@ public class TestProbes
 	public static void main( String[] args ) throws IOException
 	{
 		//System.out.println( new String( "Probe Id;Chromosome;Begin;End;Gap length" ).matches( "Hello" ) );
-		for ( int i = 2; i <= 2; ++i )
+		for ( int i = 1; i <= 10; ++i )
 		{
 			ArrayList< CombingProbe > probes = CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i );
 	
 			Collections.sort( probes );
 	
-			System.out.println( probes.size() + " probes total." );
+			System.out.print( i + "\t" + probes.size() + "\t" );
 			
 			//for ( final CombingProbe p : probes )
 			//	System.out.println( p );
 	
-			System.out.println( randomlySample( probes, 400000, 10000, true )[ 0 ] );
+			System.out.println( randomlySample( probes, 400000, 100000, true )[ 0 ] );
 		}
 	}
 
