@@ -2,13 +2,43 @@ package simulation;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
+import net.imglib2.KDTree;
+import net.imglib2.RealLocalizable;
+import net.imglib2.RealPoint;
+import net.imglib2.neighborsearch.NearestNeighborSearchOnKDTree;
+
 public class DesignMorseCode
 {
+	final private static boolean containsSameSet( final ArrayList< CombingProbe > selectedProbes, final ArrayList< ArrayList< CombingProbe > > bestProbes )
+	{
+		for ( final ArrayList< CombingProbe > set : bestProbes )
+			if ( equals( selectedProbes, set ) )
+				return true;
+
+		return false;
+	}
+
+	final private static boolean equals( final ArrayList< CombingProbe > selectedProbes, final ArrayList< CombingProbe > bestProbes )
+	{
+		if ( selectedProbes.size() != bestProbes.size() )
+			return false;
+
+		for ( int i = 0; i < selectedProbes.size(); ++i )
+		{
+			final CombingProbe p = selectedProbes.get( i );
+			final CombingProbe q = bestProbes.get( i );
+
+			if ( p.start() != q.start() || p.end() != q.end() )
+				return false;
+		}
+
+		return true;
+	}
+
 	final private static void sortIntoList( final int r, final ArrayList< CombingProbe > selectedProbes, final ArrayList< Integer > bestInt, final ArrayList< ArrayList< CombingProbe > > bestProbes )
 	{
 		if ( r > bestInt.get( bestInt.size() - 1 ) )
@@ -35,6 +65,94 @@ public class DesignMorseCode
 
 			//System.out.println( i + ", best: " + ( (double)best / (double)testIterations ) * 100.0 + " %" );
 		}
+	}
+
+	public static Pair< ArrayList< Integer >, ArrayList< ArrayList< CombingProbe > > > designBestEqual(
+			final ArrayList< CombingProbe > allProbes,
+			final int numProbes,
+			final int combingLength,
+			final double minDistanceProbes,
+			final int numIterations,
+			final int testIterations,
+			final int nBest,
+			final Random rnd )
+	{
+		final ArrayList< Integer > bestInt = new ArrayList< Integer >();
+		final ArrayList< ArrayList< CombingProbe > > bestProbes = new ArrayList< ArrayList<CombingProbe> >();
+
+		final ArrayList< RealLocalizable > positions = new ArrayList< RealLocalizable >();
+		final ArrayList< CombingProbe > probes = new ArrayList< CombingProbe >();
+
+		final long start = allProbes.get( 0 ).start();
+
+		for ( final CombingProbe p : allProbes )
+		{
+			positions.add( new RealPoint( ( p.start() - start ) / CombingProbe.nucleotidesPerPixel() ) );
+			positions.add( new RealPoint( ( p.end() - start ) / CombingProbe.nucleotidesPerPixel() ) );
+			probes.add( p );
+			probes.add( p );
+
+			//System.out.println( (( p.start() - start ) / CombingProbe.nucleotidesPerPixel() ) + " >>> " + ( ( p.end() - start ) / CombingProbe.nucleotidesPerPixel() ) + ": " + p );
+		}
+
+		final double avgStep = (allProbes.get( allProbes.size() - 1 ).end() - allProbes.get( 0 ).start()) / numProbes / CombingProbe.nucleotidesPerPixel();
+
+		final KDTree< CombingProbe > tree = new KDTree< CombingProbe >( probes, positions );
+		final NearestNeighborSearchOnKDTree< CombingProbe > search = new NearestNeighborSearchOnKDTree< CombingProbe >( tree );
+
+		for ( int i = 0; i < nBest; ++i )
+		{
+			bestInt.add( -1 );
+			bestProbes.add( new ArrayList< CombingProbe >() );
+		}
+
+		int i = 0;
+
+		do
+		{
+			final ArrayList< CombingProbe > selectedProbes = new ArrayList< CombingProbe >();
+			final double sigma = 3 + rnd.nextInt( (int)Math.round( avgStep/2 ) - 3 );
+
+			//System.out.println( sigma + " > " + (avgStep/2) );
+			for ( int k = 0; k < numProbes; ++k )
+			{
+				final double position = (rnd.nextGaussian() * sigma + avgStep*k );
+				search.search( new RealPoint( position ) );
+				//System.out.println( Math.round( k*avgStep ) + ": " + position + " " + search.getSampler().get() );
+				selectedProbes.add( search.getSampler().get() );
+			}
+
+			//System.out.println( isValid( selectedProbes, minDistanceProbes ) );
+			
+			if ( !containsSameSet( selectedProbes, bestProbes ) && isValid( selectedProbes, minDistanceProbes ) )
+			{
+				final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, true, rnd )[ 0 ];
+				sortIntoList( r, selectedProbes, bestInt, bestProbes );
+
+			}
+		}
+		while ( ++i < numIterations );
+
+		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
+	}
+
+	private static final boolean isValid( final ArrayList< CombingProbe > probes, final double minDistanceProbes )
+	{
+		Collections.sort( probes );
+
+		for ( int i = 0; i < probes.size() - 1; ++i )
+		{
+			final CombingProbe p = probes.get( i );
+			final CombingProbe q = probes.get( i + 1 );
+	
+			if ( p.distanceTo( q ) / CombingProbe.nucleotidesPerPixel() < minDistanceProbes )
+			{
+				//System.out.println( "Fail on:" + p + " <>" + q );
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	public static Pair< ArrayList< Integer >, ArrayList< ArrayList< CombingProbe > > > designBest(
@@ -323,30 +441,20 @@ A:			do
 		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
 	}
 
-	public static void main( String[] args ) throws IOException
+	public static Pair< Integer, ArrayList< CombingProbe > > optimalProbesFor( final ArrayList< CombingProbe > allProbes, final int numProbes )
 	{
-		final ArrayList< CombingProbe > allProbes = new ArrayList< CombingProbe >();
-
-		for ( int i = 1; i <= 10; ++i )
-			allProbes.addAll( CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i ) );
-
-		Collections.sort( allProbes );
-
-		System.out.println( allProbes.size() + " probes total." );
-
 		final Random rnd = new Random( 353 );
 
-		final int numProbes = 16;
 		final int combingLength = 400000;
 		final double minDistanceProbes = 10.0;
-		final int numIterations = 100000;
+		final int numIterations = 1000000;
 		final int testIterations = 100;
 		final int nBest = 100;
 
 		long time = System.currentTimeMillis();
 
 		Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > best = 
-				designBest( allProbes, numProbes, combingLength, minDistanceProbes, numIterations, testIterations, nBest, rnd );
+				designBestEqual( allProbes, numProbes, combingLength, minDistanceProbes, numIterations, testIterations, nBest, rnd );
 
 		System.out.println( System.currentTimeMillis() - time );
 
@@ -356,6 +464,7 @@ A:			do
 		System.out.println( "..." );
 		System.out.println( best.getA().get( best.getA().size() - 1 ) );
 
+		
 		// TODO: hack - put it their design and improve on it
 		for ( int gmcId = 1; gmcId <= 10; ++gmcId )
 		{
@@ -372,7 +481,7 @@ A:			do
 				best.getB().add( designedProbes );
 			}
 		}
-
+		
 		final int numIterationsFilter = 10000;
 		final int nBestFilter = 10;
 
@@ -390,7 +499,7 @@ A:			do
 		int noBetter = 0;
 		int last = -1;
 
-		for ( int x = 0; x < 100000; ++x )
+		for ( int x = 0; x < 1000; ++x )
 		{
 			System.out.print( x +": " );
 
@@ -398,7 +507,7 @@ A:			do
 			{
 				noChange = 0;
 				noBetter = 0;
-				final int ex = Math.max(  2, rnd.nextInt(numProbes-1) );
+				final int ex = Math.max(  2, rnd.nextInt(numProbes-1)/2 );
 				System.out.print( "ex=" + ex + " " );
 				best = exchangeAll( allProbes, best.getB(), ex, combingLength, minDistanceProbes, 1000, testIterations, nBestFilter, rnd );
 
@@ -409,7 +518,7 @@ A:			do
 					bestP.addAll( bestProbesAll );
 					best.getA().add( bestAll );
 					best.getB().add( bestP );
-					System.out.print( "best back " );
+					System.out.print( "best back (" + bestAll + ") " );
 				}
 			}
 			else
@@ -452,8 +561,40 @@ A:			do
 			{
 				System.out.println();
 			}
+			
+			if ( x > 0 && x % 100 == 0 )
+				System.out.println( TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
 		}
 		
+		return new Pair< Integer, ArrayList<CombingProbe> >( bestAll, bestProbesAll );
+	}
+	
+	public static void main( String[] args ) throws IOException
+	{
+		final ArrayList< CombingProbe > allProbes = new ArrayList< CombingProbe >();
+
+		for ( int i = 1; i <= 10; ++i )
+		{
+			final ArrayList< CombingProbe > probes = CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i );
+
+			for ( final CombingProbe p : probes )
+			{
+				boolean contains = false;
+
+				for ( final CombingProbe q : allProbes )
+					if ( q.start() == p.start() && q.end() == p.end() )
+						contains = true;
+
+				if ( !contains )
+					allProbes.add( p );
+			}
+		}
+
+		Collections.sort( allProbes );
+
+		System.out.println( allProbes.size() + " probes total." );
+
+		final Pair< Integer, ArrayList< CombingProbe > > best = optimalProbesFor( allProbes, 17 );
 	}
 
 }
