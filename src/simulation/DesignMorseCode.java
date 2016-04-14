@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Random;
 
 import net.imglib2.KDTree;
@@ -447,34 +448,52 @@ A:			do
 
 		final int combingLength = 400000;
 		final double minDistanceProbes = 10.0;
-		final int numIterations = 1000000;
+		final int numIterations = 10000000;
 		final int testIterations = 100;
 		final int nBest = 100;
-
-		long time = System.currentTimeMillis();
 
 		Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > best = 
 				designBestEqual( allProbes, numProbes, combingLength, minDistanceProbes, numIterations, testIterations, nBest, rnd );
 
-		System.out.println( System.currentTimeMillis() - time );
+//		for ( int i = 0; i < 10; ++i )
+//			System.out.println( best.getA().get( i ) );
 
-		for ( int i = 0; i < 10; ++i )
-			System.out.println( best.getA().get( i ) );
-
-		System.out.println( "..." );
-		System.out.println( best.getA().get( best.getA().size() - 1 ) );
+//		System.out.println( "..." );
+//		System.out.println( best.getA().get( best.getA().size() - 1 ) );
 
 		
 		// TODO: hack - put it their design and improve on it
-		for ( int gmcId = 1; gmcId <= 10; ++gmcId )
 		{
+			int gmcId = -1;
+			
+			if ( numProbes == 16 )
+				gmcId = 1;
+			else if ( numProbes == 17 )
+				gmcId = 2;
+			else if ( numProbes == 18 )
+				gmcId = 3;
+			else if ( numProbes == 20 )
+				gmcId = 4;
+			else if ( numProbes == 21 )
+				gmcId = 5;
+			else if ( numProbes == 22 )
+				gmcId = 6;
+			else if ( numProbes == 23 )
+				gmcId = 7;
+			else if ( numProbes == 24 )
+				gmcId = 8;
+			else if ( numProbes == 29 )
+				gmcId = 9;
+			else if ( numProbes == 30 )
+				gmcId = 10;
+
 			final ArrayList< CombingProbe > designedProbes = new ArrayList< CombingProbe >();
 			
 			for ( final CombingProbe p : allProbes )
 				if ( p.gmcId() == gmcId )
 					designedProbes.add( p );
 	
-			if ( designedProbes.size() == numProbes )
+			if ( gmcId > 0 )
 			{
 				System.out.println( "Adding designed probes gmcId=" + gmcId );
 				best.getA().add( 1 );
@@ -487,10 +506,10 @@ A:			do
 
 		best = filterBest( best, combingLength, numIterationsFilter, nBestFilter, rnd );
 
-		for ( int i = 0; i < nBestFilter; ++i )
-			System.out.println( best.getA().get( i ) );
+		//for ( int i = 0; i < nBestFilter; ++i )
+		//	System.out.println( best.getA().get( i ) );
 
-		System.out.println();
+		//System.out.println();
 
 		int bestAll = -1;
 		ArrayList< CombingProbe > bestProbesAll = null;
@@ -499,16 +518,16 @@ A:			do
 		int noBetter = 0;
 		int last = -1;
 
-		for ( int x = 0; x < 1000; ++x )
+		for ( int x = 0; x < 10000; ++x )
 		{
-			System.out.print( x +": " );
+			//System.out.print( x +": " );
 
 			if ( noChange >= 5 || noBetter >= 50 )
 			{
 				noChange = 0;
 				noBetter = 0;
 				final int ex = Math.max(  2, rnd.nextInt(numProbes-1)/2 );
-				System.out.print( "ex=" + ex + " " );
+				//System.out.print( "ex=" + ex + " " );
 				best = exchangeAll( allProbes, best.getB(), ex, combingLength, minDistanceProbes, 1000, testIterations, nBestFilter, rnd );
 
 				// every third time put the best one back in
@@ -518,7 +537,7 @@ A:			do
 					bestP.addAll( bestProbesAll );
 					best.getA().add( bestAll );
 					best.getB().add( bestP );
-					System.out.print( "best back (" + bestAll + ") " );
+					//System.out.print( "best back (" + bestAll + ") " );
 				}
 			}
 			else
@@ -526,14 +545,14 @@ A:			do
 				best = iterateAll( allProbes, best.getB(), combingLength, minDistanceProbes, testIterations, nBestFilter, rnd );
 			}
 
-			System.out.print( best.getA().get( 0 ) + " >>> " );
+			//System.out.print( best.getA().get( 0 ) + " >>> " );
 
 			//for ( int i = 0; i < best.getA().size(); ++i )
 			//	System.out.println( best.getA().get( i ) );
 
 			best = filterBest( best, combingLength, numIterationsFilter, nBestFilter, null );
 
-			System.out.print( best.getA().get( 0 ) );
+			//System.out.print( best.getA().get( 0 ) );
 
 			if ( last == best.getA().get( 0 ) )
 			{
@@ -554,18 +573,20 @@ A:			do
 				bestAll = best.getA().get( 0 );
 				bestProbesAll = new ArrayList< CombingProbe >();
 				bestProbesAll.addAll( best.getB().get( 0 ) );
-				System.out.println( ", new best." );
+				//System.out.println( ", new best." );
 				noBetter = 0;
 			}
 			else
 			{
-				System.out.println();
+				//System.out.println();
 			}
 			
-			if ( x > 0 && x % 100 == 0 )
-				System.out.println( TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
+			//if ( x > 0 && x % 1000 == 0 )
+			//	System.out.println( TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
 		}
-		
+
+		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + ": "  + TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
+
 		return new Pair< Integer, ArrayList<CombingProbe> >( bestAll, bestProbesAll );
 	}
 	
@@ -594,7 +615,10 @@ A:			do
 
 		System.out.println( allProbes.size() + " probes total." );
 
-		final Pair< Integer, ArrayList< CombingProbe > > best = optimalProbesFor( allProbes, 17 );
+		for ( int i = 16; i <= 30; ++i )
+		{
+			final Pair< Integer, ArrayList< CombingProbe > > best = optimalProbesFor( allProbes, i );
+		}
 	}
 
 }
