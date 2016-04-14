@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import net.imglib2.KDTree;
 import net.imglib2.RealLocalizable;
@@ -613,11 +616,39 @@ A:			do
 
 		Collections.sort( allProbes );
 
-		System.out.println( allProbes.size() + " probes total." );
+		System.out.println( new Date( System.currentTimeMillis() ) + ": " + allProbes.size() + " probes total." );
+		System.out.println( "CPUs: " + Runtime.getRuntime().availableProcessors() );
+
+		final ExecutorService taskExecutor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+		final ArrayList< Callable< Void > > tasks = new ArrayList< Callable< Void > >(); // your tasks
 
 		for ( int i = 16; i <= 30; ++i )
 		{
-			final Pair< Integer, ArrayList< CombingProbe > > best = optimalProbesFor( allProbes, i );
+			final int j = i;
+
+			tasks.add( new Callable<Void>() {
+
+				@Override
+				public Void call() throws Exception {
+					optimalProbesFor( allProbes, j );
+					return null;
+				}
+			});
+		}
+
+		try
+		{
+			// invokeAll() returns when all tasks are complete
+			taskExecutor.invokeAll( tasks );
+		}
+		catch ( final InterruptedException e )
+		{
+			e.printStackTrace();
+		}
+
+		for ( int i = 16; i <= 30; ++i )
+		{
+			//final Pair< Integer, ArrayList< CombingProbe > > best = optimalProbesFor( allProbes, i );
 		}
 	}
 
