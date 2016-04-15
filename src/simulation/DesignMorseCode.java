@@ -445,7 +445,7 @@ A:			do
 		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
 	}
 
-	public static Pair< Integer, ArrayList< CombingProbe > > optimalProbesFor( final ArrayList< CombingProbe > allProbes, final int numProbes )
+	public static Pair< Integer, ArrayList< CombingProbe > > optimalProbesFor( final ArrayList< CombingProbe > allProbes, final ArrayList< CombingProbe > allProbesDouble, final int numProbes )
 	{
 		final Random rnd = new Random( 353 );
 
@@ -466,6 +466,7 @@ A:			do
 
 		
 		// TODO: hack - put it their design and improve on it
+		if ( allProbesDouble != null )
 		{
 			int gmcId = -1;
 			
@@ -492,13 +493,13 @@ A:			do
 
 			final ArrayList< CombingProbe > designedProbes = new ArrayList< CombingProbe >();
 			
-			for ( final CombingProbe p : allProbes )
+			for ( final CombingProbe p : allProbesDouble )
 				if ( p.gmcId() == gmcId )
 					designedProbes.add( p );
 	
 			if ( gmcId > 0 )
 			{
-				System.out.println( "Adding designed probes gmcId=" + gmcId );
+				System.out.println( "Adding " + designedProbes.size() + " designed probes gmcId=" + gmcId );
 				best.getA().add( 1 );
 				best.getB().add( designedProbes );
 			}
@@ -521,7 +522,7 @@ A:			do
 		int noBetter = 0;
 		int last = -1;
 
-		for ( int x = 0; x < 10000; ++x )
+		for ( int x = 0; x < 30000; ++x )
 		{
 			//System.out.print( x +": " );
 
@@ -584,11 +585,11 @@ A:			do
 				//System.out.println();
 			}
 			
-			//if ( x > 0 && x % 1000 == 0 )
-			//	System.out.println( TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
+			if ( x > 0 && x % 10000 == 0 )
+				System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + "@" + x +": "  + TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
 		}
 
-		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + ": "  + TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
+		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + " FINAL: "  + TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
 
 		return new Pair< Integer, ArrayList<CombingProbe> >( bestAll, bestProbesAll );
 	}
@@ -596,10 +597,12 @@ A:			do
 	public static void main( String[] args ) throws IOException
 	{
 		final ArrayList< CombingProbe > allProbes = new ArrayList< CombingProbe >();
+		final ArrayList< CombingProbe > allProbesDouble = new ArrayList< CombingProbe >();
 
 		for ( int i = 1; i <= 10; ++i )
 		{
 			final ArrayList< CombingProbe > probes = CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i );
+			allProbesDouble.addAll( probes );
 
 			for ( final CombingProbe p : probes )
 			{
@@ -617,6 +620,7 @@ A:			do
 		Collections.sort( allProbes );
 
 		System.out.println( new Date( System.currentTimeMillis() ) + ": " + allProbes.size() + " probes total." );
+		System.out.println( new Date( System.currentTimeMillis() ) + ": " + allProbesDouble.size() + " probes total, including duplicates." );
 		System.out.println( "CPUs: " + Runtime.getRuntime().availableProcessors() );
 
 		final ExecutorService taskExecutor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
@@ -630,7 +634,7 @@ A:			do
 
 				@Override
 				public Void call() throws Exception {
-					optimalProbesFor( allProbes, j );
+					optimalProbesFor( allProbes, allProbesDouble, j );
 					return null;
 				}
 			});
