@@ -455,7 +455,7 @@ A:			do
 
 	public static Pair< Integer, ArrayList< CombingProbe > > optimalProbesFor( final ArrayList< CombingProbe > allProbesIn, final ArrayList< CombingProbe > allProbesDouble, final int numProbes, final long min, final long max )
 	{
-		final ArrayList< CombingProbe > allProbes = new ArrayList<>();
+		final ArrayList< CombingProbe > allProbes = new ArrayList< CombingProbe >();
 
 		for ( final CombingProbe p : allProbesIn )
 			allProbes.add( p.copy() );
