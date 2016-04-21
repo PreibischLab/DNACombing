@@ -618,11 +618,11 @@ A:			do
 					System.out.println();
 			}
 			
-			if ( x == 5 || x == 10 || x == 100 )
-			{
+			if ( x == 10 || x == 100 )
 				System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + "@it" + x +": "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000, min, max )[ 0 ] );
-				saveProbeFile( bestProbesAll, new File( "GMC_" + numProbes + "_design.csv.tmp" ) );
-			}
+
+			//if ( x % 10 == 0 )
+				saveProbeFile( bestProbesAll, new File( "tmp/GMC_" + numProbes + "_design_" + x + ".csv.tmp" ) );
 		}
 
 		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + " FINAL: "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000, min, max )[ 0 ] );
