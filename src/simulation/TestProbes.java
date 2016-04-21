@@ -6,24 +6,31 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
+import ij.ImageJ;
+import ij.ImagePlus;
+import ij.process.ColorProcessor;
+import ij.process.FloatProcessor;
+
 public class TestProbes
 {
 	public static enum MatchResult{ CORRECT, AMBIVALENT, WRONG, NO_MATCH, NOT_ENOUGH_PROBES };
 
-	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations )
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final long min, final long max )
 	{
 		final Random rnd = new Random( 35 );
-		return randomlySample( probes, length, iterations, rnd );
+		return randomlySample( probes, length, iterations, min, max, rnd );
 	}
 
-	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final Random rnd )
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, long min, long max, final Random rnd )
 	{
+		Collections.sort( probes );
+
 		// set a linearly increasing ID as the matching itselfs relies on it to determine the correct match (HORRIBLE!!)
 		for ( int i = 0; i < probes.size(); ++i )
 			probes.get( i ).setTmpId( i + 1 );
 
 		final double error = 10;
-
+		/*
 		long min = probes.get( 0 ).start();
 		long max = probes.get( 0 ).end();
 
@@ -32,10 +39,11 @@ public class TestProbes
 			min = Math.min( Math.min( min, p.start() ), p.end() );
 			max = Math.max( Math.max( max, p.start() ), p.end() );
 		}
+		*/
 
 		// NOT ANYMORE: only consider random segments that contain at least some part of the GMC area
-		//min -= length;
-		final long size = max - min + 1 - length; // only consider probes that lie within the area
+		min -= length/3;
+		final long size = max - min + 1 - length + length/3; // only consider probes that lie within the area
 
 		// histogram of how many probes are hit
 		//final int[] containsHist = new int[ 100 ];
@@ -203,29 +211,66 @@ public class TestProbes
 			return MatchResult.WRONG;
 	}
 
+	public static void drawProbes( final FloatProcessor fp, ArrayList< CombingProbe > probes, final long min, final int y )
+	{
+		for ( final CombingProbe p : probes )
+		{
+			int x0 = (int) Math.round( (p.start()-min) / CombingProbe.nucleotidesPerPixel() );
+			int x1 = (int) Math.round( (p.end()-min) / CombingProbe.nucleotidesPerPixel() );
+
+			ColorProcessor cp;
+
+			for ( int x = x0; x <= x1; ++x )
+			{
+				fp.putPixel( x, y - 1, 1 );
+				fp.putPixel( x, y, 1 );
+				fp.putPixel( x, y + 1, 1 );
+			}
+		}
+	}
+
 	public static void main( String[] args ) throws IOException
 	{
-		//System.out.println( new String( "Probe Id;Chromosome;Begin;End;Gap length" ).matches( "Hello" ) );
-		for ( int i = 1; i <= 10; ++i )
+		final ArrayList< CombingProbe > allProbesDouble = DesignMorseCode.loadAllProbesets();
+
+		final int combingLength = 350000;
+
+		final long min = DesignMorseCode.min( allProbesDouble );
+		final long max = DesignMorseCode.max( allProbesDouble );
+
+		System.out.println( "Probes ranging from " + min + " to " + max + " (size=" + (max-min) + ", equals " + ( Math.round( (max-min)/CombingProbe.nucleotidesPerPixel() ) + 1 ) + " px)" );
+
+		long minDraw = min - combingLength/3;
+		long maxDraw = max + combingLength/3;
+
+		System.out.println( "Area drawn ranges from " + minDraw + " to " + maxDraw + " (size=" + (maxDraw-minDraw) + ", equals " + ( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ) + " px)" );
+
+
+		final FloatProcessor fp = new FloatProcessor( (int)( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ), 500 );
+
+		for ( int i = 12; i <= 12; ++i )
 		{
 			final File f;
-			
-			if ( i <= 10 )
-				f = new File( "GMC_" + i + ".csv" );
-			else
-				f = new File( "GMC_23_design.csv" );
+
+			//f = new File( "GMC_" + i + ".csv" );
+			f = new File( "GMC_" + i + "_design.csv.tmp" );
 
 			ArrayList< CombingProbe > probes = CombingProbe.loadFile( f, i );
 	
 			Collections.sort( probes );
 	
-			System.out.print( i + "\t" + probes.size() + "\t" );
+			System.out.println( i + "\t" + probes.size() + "\t" );
 			
 			//for ( final CombingProbe p : probes )
 			//	System.out.println( p );
 	
-			System.out.println( randomlySample( probes, 400000, 100000 )[ 0 ] );
+			drawProbes( fp, probes, minDraw, 50 + i*15 );
+
+			System.out.println( randomlySample( probes, combingLength, 100000, min, max )[ 0 ] );
 		}
+
+		new ImageJ();
+		new ImagePlus( "probes", fp ).show();
 	}
 
 }
