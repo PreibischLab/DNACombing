@@ -446,9 +446,14 @@ A:			do
 		return new Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> >( bestInt, bestProbes );
 	}
 
-	public static Pair< Integer, ArrayList< CombingProbe > > optimalProbesFor( final ArrayList< CombingProbe > allProbes, final ArrayList< CombingProbe > allProbesDouble, final int numProbes )
+	public static Pair< Integer, ArrayList< CombingProbe > > optimalProbesFor( final ArrayList< CombingProbe > allProbesIn, final ArrayList< CombingProbe > allProbesDouble, final int numProbes )
 	{
-		final boolean debug = false;
+		final ArrayList< CombingProbe > allProbes = new ArrayList<>();
+
+		for ( final CombingProbe p : allProbesIn )
+			allProbes.add( p.copy() );
+
+		final boolean debug = true;
 
 		final Random rnd = new Random( 353 );
 
@@ -500,7 +505,7 @@ A:			do
 			
 			for ( final CombingProbe p : allProbesDouble )
 				if ( p.gmcId() == gmcId )
-					designedProbes.add( p );
+					designedProbes.add( p.copy() );
 	
 			if ( gmcId > 0 )
 			{
@@ -669,7 +674,7 @@ A:			do
 		final ExecutorService taskExecutor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 		final ArrayList< Callable< Void > > tasks = new ArrayList< Callable< Void > >(); // your tasks
 
-		for ( int i = 10; i <= 25; ++i )
+		for ( int i = 16; i <= 16; ++i )
 		{
 			final int j = i;
 

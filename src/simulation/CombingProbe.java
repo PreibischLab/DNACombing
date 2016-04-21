@@ -38,6 +38,13 @@ public class CombingProbe implements Comparable< CombingProbe >
 	public int length() { return (int)( end()-start() + 1 ); }
 	public double inPixels() { return (double)length() / nucleotidesPerPixel(); }
 
+	public CombingProbe copy()
+	{
+		final CombingProbe p =  new CombingProbe(gmcId, originalId, chr, start, end);
+		p.setTmpId( p.id() );
+		return p;
+	}
+
 	public static double nucleotidesPerPixel() { return 1500.0; }
 
 	public long distanceTo( final CombingProbe p )
