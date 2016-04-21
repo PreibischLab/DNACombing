@@ -645,7 +645,6 @@ A:			do
 		for ( int i = 1; i <= 10; ++i )
 		{
 			final ArrayList< CombingProbe > probes = CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i );
-			saveProbeFile( probes, new File( "GMC_" + i + "_out.csv" ) );
 			allProbesDouble.addAll( probes );
 
 			for ( final CombingProbe p : probes )
@@ -667,7 +666,6 @@ A:			do
 		System.out.println( new Date( System.currentTimeMillis() ) + ": " + allProbesDouble.size() + " probes total, including duplicates." );
 		System.out.println( "CPUs: " + Runtime.getRuntime().availableProcessors() );
 
-		System.exit( 0 );
 		final ExecutorService taskExecutor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 		final ArrayList< Callable< Void > > tasks = new ArrayList< Callable< Void > >(); // your tasks
 
