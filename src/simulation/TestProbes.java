@@ -8,6 +8,7 @@ import java.util.Random;
 
 import ij.ImageJ;
 import ij.ImagePlus;
+import ij.ImageStack;
 import ij.process.ColorProcessor;
 import ij.process.FloatProcessor;
 
@@ -222,9 +223,9 @@ public class TestProbes
 
 			for ( int x = x0; x <= x1; ++x )
 			{
-				fp.putPixel( x, y - 1, 1 );
-				fp.putPixel( x, y, 1 );
-				fp.putPixel( x, y + 1, 1 );
+				fp.putPixelValue( x, y - 1, 1.0 );
+				fp.putPixelValue( x, y, 2.0 );
+				fp.putPixelValue( x, y + 1, 1.0 );
 			}
 		}
 	}
@@ -245,32 +246,39 @@ public class TestProbes
 
 		System.out.println( "Area drawn ranges from " + minDraw + " to " + maxDraw + " (size=" + (maxDraw-minDraw) + ", equals " + ( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ) + " px)" );
 
+		final ImageStack stack = new ImageStack( (int)( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ), 500 );
 
-		final FloatProcessor fp = new FloatProcessor( (int)( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ), 500 );
-
-		for ( int i = 12; i <= 12; ++i )
+		for ( int it = 1; it < 5; ++it )
 		{
-			final File f;
-
-			//f = new File( "GMC_" + i + ".csv" );
-			f = new File( "GMC_" + i + "_design.csv.tmp" );
-
-			ArrayList< CombingProbe > probes = CombingProbe.loadFile( f, i );
-	
-			Collections.sort( probes );
-	
-			System.out.println( i + "\t" + probes.size() + "\t" );
 			
-			//for ( final CombingProbe p : probes )
-			//	System.out.println( p );
+			final FloatProcessor fp = new FloatProcessor( (int)( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ), 500 );
 	
-			drawProbes( fp, probes, minDraw, 50 + i*15 );
+			for ( int i = 7; i <= 25; ++i )
+			{
+				final File f;
+	
+				//f = new File( "GMC_" + i + ".csv" );
+				f = new File( "GMC_" + i + "_design_" + it + ".csv.tmp" );
+	
+				ArrayList< CombingProbe > probes = CombingProbe.loadFile( f, i );
+		
+				Collections.sort( probes );
+		
+				System.out.print( i + "\t" + probes.size() + "\t" );
+				
+				//for ( final CombingProbe p : probes )
+				//	System.out.println( p );
+		
+				drawProbes( fp, probes, minDraw, 50 + (i-7)*15 );
+	
+				//System.out.println( randomlySample( probes, combingLength, 100000, min, max )[ 0 ] );
+			}
 
-			System.out.println( randomlySample( probes, combingLength, 100000, min, max )[ 0 ] );
+			stack.addSlice( fp );
 		}
-
+		
 		new ImageJ();
-		new ImagePlus( "probes", fp ).show();
+		new ImagePlus( "probes", stack ).show();
 	}
 
 }
