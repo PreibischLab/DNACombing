@@ -10,21 +10,28 @@ public class CombingProbe implements Comparable< CombingProbe >
 	//P2;chr7;116062000;116074000;50
 
 	final int gmcId;
-	final int id;
+	final int originalId;
 	final int chr;
 	final long start, end;
+
+	int tmpId;
 
 	public CombingProbe( final int gmcId, final int id, final int chr, final long start, final long end )
 	{
 		this.gmcId = gmcId;
-		this.id = id;
+		this.originalId = id;
 		this.chr = chr;
 		this.start = start;
 		this.end = end;
+
+		this.tmpId = originalId;
 	}
 
+	public void setTmpId( final int id ) { this.tmpId = id; }
+	public void resetTmpId() { this.tmpId = originalId; }
+
 	public int gmcId() { return gmcId; }
-	public int id() { return id; }
+	public int id() { return tmpId; }
 	public int chr() { return chr; }
 	public long start() { return start; }
 	public long end() { return end; }
