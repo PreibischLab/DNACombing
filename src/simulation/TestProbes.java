@@ -10,15 +10,19 @@ public class TestProbes
 {
 	public static enum MatchResult{ CORRECT, AMBIVALENT, WRONG, NO_MATCH, NOT_ENOUGH_PROBES };
 
-	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final boolean mirror )
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations )
 	{
 		final Random rnd = new Random( 35 );
-		return randomlySample( probes, length, iterations, mirror, rnd );
+		return randomlySample( probes, length, iterations, rnd );
 	}
 
-	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final boolean mirror, final Random rnd )
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final Random rnd )
 	{
-		final double error = 5;
+		// set a linearly increasing ID as the matching itselfs relies on it to determine the correct match (HORRIBLE!!)
+		for ( int i = 0; i < probes.size(); ++i )
+			probes.get( i ).setTmpId( i + 1 );
+
+		final double error = 10;
 
 		long min = probes.get( 0 ).start();
 		long max = probes.get( 0 ).end();
@@ -75,7 +79,7 @@ public class TestProbes
 					distDetect[ j ] = contained.get( j ).distanceTo( contained.get( j + 1 ) ) / CombingProbe.nucleotidesPerPixel();
 
 				final double maxError = Math.max( 1, rnd.nextGaussian() * 2 + error );
-				m = match( distGMCs, distDetect, maxError, contained.get( 0 ).id() - 1, mirror, false ); // probe ID starts with 1, not 0
+				m = match( distGMCs, distDetect, maxError, contained.get( 0 ).id() - 1, false ); // probe ID starts with 1, not 0
 
 				/*
 				if ( m == MatchResult.AMBIVALENT )
@@ -105,10 +109,13 @@ public class TestProbes
 		
 		//System.out.println();
 
+		for ( int i = 0; i < probes.size(); ++i )
+			probes.get( i ).resetTmpId();
+
 		return resultHist;
 	}
 
-	public static MatchResult match( final double[] distGMCs, final double distDetect[], final double maxErrorPx, final int correctMatch, final boolean mirror, final boolean debug )
+	public static MatchResult match( final double[] distGMCs, final double distDetect[], final double maxErrorPx, final int correctMatch, final boolean debug )
 	{
 		int countMatches = 0;
 		int minErrorIndex = -1;
@@ -120,7 +127,7 @@ public class TestProbes
 			for ( int i = 0; i < distGMCs.length; ++i )
 				System.out.println( i + ":" + distGMCs[ i ] );
 
-			if ( mirror ) // we should detect nothing in this direction
+			// we should detect nothing in this direction
 			{
 				System.out.println( "GMCdist (mirror):" );
 				final double[] distGMCsMirrored = new double[ distGMCs.length ];
@@ -158,7 +165,7 @@ public class TestProbes
 			}
 		}
 
-		if ( mirror ) // we should detect nothing in this direction
+		// we should detect nothing in this direction
 		{
 			final double[] distGMCsMirrored = new double[ distGMCs.length ];
 			for ( int i = 0; i < distGMCs.length; ++i )
@@ -201,7 +208,14 @@ public class TestProbes
 		//System.out.println( new String( "Probe Id;Chromosome;Begin;End;Gap length" ).matches( "Hello" ) );
 		for ( int i = 1; i <= 10; ++i )
 		{
-			ArrayList< CombingProbe > probes = CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i );
+			final File f;
+			
+			if ( i <= 10 )
+				f = new File( "GMC_" + i + ".csv" );
+			else
+				f = new File( "GMC_23_design.csv" );
+
+			ArrayList< CombingProbe > probes = CombingProbe.loadFile( f, i );
 	
 			Collections.sort( probes );
 	
@@ -210,7 +224,7 @@ public class TestProbes
 			//for ( final CombingProbe p : probes )
 			//	System.out.println( p );
 	
-			System.out.println( randomlySample( probes, 400000, 100000, true )[ 0 ] );
+			System.out.println( randomlySample( probes, 400000, 100000 )[ 0 ] );
 		}
 	}
 
