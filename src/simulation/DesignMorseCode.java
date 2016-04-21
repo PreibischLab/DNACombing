@@ -2,6 +2,7 @@ package simulation;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -130,7 +131,7 @@ public class DesignMorseCode
 			
 			if ( !containsSameSet( selectedProbes, bestProbes ) && isValid( selectedProbes, minDistanceProbes ) )
 			{
-				final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, true, rnd )[ 0 ];
+				final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, rnd )[ 0 ];
 				sortIntoList( r, selectedProbes, bestInt, bestProbes );
 
 			}
@@ -205,7 +206,7 @@ A:			do
 			}
 			while ( selectedProbes.size() < numProbes );
 
-			final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, true, rnd )[ 0 ];
+			final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, rnd )[ 0 ];
 
 			sortIntoList( r, selectedProbes, bestInt, bestProbes );
 		}
@@ -314,7 +315,7 @@ A:			for ( int j = 0; j < allProbes.size(); ++j )
 
 				selectedProbes.add( p );
 
-				final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, true, rnd )[ 0 ];
+				final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, rnd )[ 0 ];
 
 				sortIntoList( r, selectedProbes, bestInt, bestProbes );
 			}
@@ -403,7 +404,7 @@ A:			do
 			}
 			while( selectedProbes.size() < probes.size() );
 
-			final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, true, rnd )[ 0 ];
+			final int r = TestProbes.randomlySample( selectedProbes, combingLength, testIterations, rnd )[ 0 ];
 
 			sortIntoList( r, selectedProbes, bestInt, bestProbes );
 		}
@@ -437,7 +438,7 @@ A:			do
 				else
 					random = rnd;
 
-				final int r = TestProbes.randomlySample( best.getB().get( i ), combingLength, numIterations, true, random )[ 0 ];
+				final int r = TestProbes.randomlySample( best.getB().get( i ), combingLength, numIterations, random )[ 0 ];
 				sortIntoList( r, best.getB().get( i ), bestInt, bestProbes );
 			}
 		}
@@ -447,24 +448,28 @@ A:			do
 
 	public static Pair< Integer, ArrayList< CombingProbe > > optimalProbesFor( final ArrayList< CombingProbe > allProbes, final ArrayList< CombingProbe > allProbesDouble, final int numProbes )
 	{
+		final boolean debug = false;
+
 		final Random rnd = new Random( 353 );
 
-		final int combingLength = 400000;
+		final int combingLength = 350000;
 		final double minDistanceProbes = 10.0;
-		final int numIterations = 10000000;
-		final int testIterations = 100;
+		final int numIterations = 100000;
+		final int testIterations = 1000;
 		final int nBest = 100;
 
 		Pair< ArrayList<Integer>, ArrayList<ArrayList<CombingProbe>> > best = 
 				designBestEqual( allProbes, numProbes, combingLength, minDistanceProbes, numIterations, testIterations, nBest, rnd );
 
-//		for ( int i = 0; i < 10; ++i )
-//			System.out.println( best.getA().get( i ) );
+		if (debug )
+		{
+			for ( int i = 0; i < 10; ++i )
+				System.out.println( best.getA().get( i ) );
+	
+			System.out.println( "..." );
+			System.out.println( best.getA().get( best.getA().size() - 1 ) );
+		}
 
-//		System.out.println( "..." );
-//		System.out.println( best.getA().get( best.getA().size() - 1 ) );
-
-		
 		// TODO: hack - put it their design and improve on it
 		if ( allProbesDouble != null )
 		{
@@ -510,10 +515,13 @@ A:			do
 
 		best = filterBest( best, combingLength, numIterationsFilter, nBestFilter, rnd );
 
-		//for ( int i = 0; i < nBestFilter; ++i )
-		//	System.out.println( best.getA().get( i ) );
-
-		//System.out.println();
+		if ( debug )
+		{
+			for ( int i = 0; i < nBestFilter; ++i )
+				System.out.println( best.getA().get( i ) );
+	
+			System.out.println();
+		}
 
 		int bestAll = -1;
 		ArrayList< CombingProbe > bestProbesAll = null;
@@ -522,16 +530,20 @@ A:			do
 		int noBetter = 0;
 		int last = -1;
 
-		for ( int x = 0; x < 30000; ++x )
+		for ( int x = 0; x < 1000; ++x )
 		{
-			//System.out.print( x +": " );
+			if ( debug )
+				System.out.print( x +": " );
 
 			if ( noChange >= 5 || noBetter >= 50 )
 			{
 				noChange = 0;
 				noBetter = 0;
 				final int ex = Math.max(  2, rnd.nextInt(numProbes-1)/2 );
-				//System.out.print( "ex=" + ex + " " );
+				
+				if ( debug )
+					System.out.print( "ex=" + ex + " " );
+				
 				best = exchangeAll( allProbes, best.getB(), ex, combingLength, minDistanceProbes, 1000, testIterations, nBestFilter, rnd );
 
 				// every third time put the best one back in
@@ -541,7 +553,9 @@ A:			do
 					bestP.addAll( bestProbesAll );
 					best.getA().add( bestAll );
 					best.getB().add( bestP );
-					//System.out.print( "best back (" + bestAll + ") " );
+					
+					if ( debug )
+						System.out.print( "best back (" + bestAll + ") " );
 				}
 			}
 			else
@@ -549,14 +563,17 @@ A:			do
 				best = iterateAll( allProbes, best.getB(), combingLength, minDistanceProbes, testIterations, nBestFilter, rnd );
 			}
 
-			//System.out.print( best.getA().get( 0 ) + " >>> " );
+			if ( debug )
+				System.out.print( best.getA().get( 0 ) + " >>> " );
 
-			//for ( int i = 0; i < best.getA().size(); ++i )
-			//	System.out.println( best.getA().get( i ) );
+			//if ( debug )
+			//	for ( int i = 0; i < best.getA().size(); ++i )
+			//		System.out.println( best.getA().get( i ) );
 
 			best = filterBest( best, combingLength, numIterationsFilter, nBestFilter, null );
 
-			//System.out.print( best.getA().get( 0 ) );
+			if ( debug )
+				System.out.print( best.getA().get( 0 ) );
 
 			if ( last == best.getA().get( 0 ) )
 			{
@@ -577,23 +594,49 @@ A:			do
 				bestAll = best.getA().get( 0 );
 				bestProbesAll = new ArrayList< CombingProbe >();
 				bestProbesAll.addAll( best.getB().get( 0 ) );
-				//System.out.println( ", new best." );
+				
+				if ( debug )
+					System.out.println( ", new best." );
+				
 				noBetter = 0;
 			}
 			else
 			{
-				//System.out.println();
+				if ( debug )
+					System.out.println();
 			}
 			
-			if ( x > 0 && x % 10000 == 0 )
-				System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + "@" + x +": "  + TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
+			if ( x == 10 || x == 100 )
+			{
+				System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + "@" + x +": "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000 )[ 0 ] );
+			}
 		}
 
-		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + " FINAL: "  + TestProbes.randomlySample( bestProbesAll, 400000, 100000, true )[ 0 ] );
+		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + " FINAL: "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000 )[ 0 ] );
+		saveProbeFile( bestProbesAll, new File( "GMC_" + numProbes + "_design.csv" ) );
 
 		return new Pair< Integer, ArrayList<CombingProbe> >( bestAll, bestProbesAll );
 	}
-	
+
+	public static void saveProbeFile( final ArrayList< CombingProbe > probes, final File file )
+	{
+		final PrintWriter out = TextFileAccess.openFileWrite( file );
+		
+		out.println( "Probe Id;Chromosome;Begin;End;Gap length" );
+
+		Collections.sort( probes );
+		int i = 1;
+
+		for ( final CombingProbe p : probes )
+		{
+			out.println();
+			out.println( "P" + i + ";chr" + p.chr() + ";" + p.start() + ";" + p.end() + ";" );
+			++i;
+		}
+
+		out.close();
+	}
+
 	public static void main( String[] args ) throws IOException
 	{
 		final ArrayList< CombingProbe > allProbes = new ArrayList< CombingProbe >();
@@ -602,6 +645,7 @@ A:			do
 		for ( int i = 1; i <= 10; ++i )
 		{
 			final ArrayList< CombingProbe > probes = CombingProbe.loadFile( new File( "GMC_" + i + ".csv" ), i );
+			saveProbeFile( probes, new File( "GMC_" + i + "_out.csv" ) );
 			allProbesDouble.addAll( probes );
 
 			for ( final CombingProbe p : probes )
@@ -623,10 +667,11 @@ A:			do
 		System.out.println( new Date( System.currentTimeMillis() ) + ": " + allProbesDouble.size() + " probes total, including duplicates." );
 		System.out.println( "CPUs: " + Runtime.getRuntime().availableProcessors() );
 
+		System.exit( 0 );
 		final ExecutorService taskExecutor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 		final ArrayList< Callable< Void > > tasks = new ArrayList< Callable< Void > >(); // your tasks
 
-		for ( int i = 16; i <= 30; ++i )
+		for ( int i = 10; i <= 25; ++i )
 		{
 			final int j = i;
 
@@ -634,7 +679,7 @@ A:			do
 
 				@Override
 				public Void call() throws Exception {
-					optimalProbesFor( allProbes, allProbesDouble, j );
+					optimalProbesFor( allProbes, null, j );
 					return null;
 				}
 			});
@@ -648,11 +693,6 @@ A:			do
 		catch ( final InterruptedException e )
 		{
 			e.printStackTrace();
-		}
-
-		for ( int i = 16; i <= 30; ++i )
-		{
-			//final Pair< Integer, ArrayList< CombingProbe > > best = optimalProbesFor( allProbes, i );
 		}
 	}
 
