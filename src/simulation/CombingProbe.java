@@ -103,6 +103,8 @@ public class CombingProbe implements Comparable< CombingProbe >
 			}
 		}
 
+		in.close();
+
 		return probes;
 	}
 }

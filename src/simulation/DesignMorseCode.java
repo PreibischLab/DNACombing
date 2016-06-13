@@ -621,7 +621,7 @@ A:			do
 				System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + "@it" + x +": "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000, min, max, error )[ 0 ] );
 
 			//if ( x % 10 == 0 )
-				saveProbeFile( bestProbesAll, new File( "tmp/GMC_" + numProbes + "_design_" + x + ".csv.tmp" ) );
+				//saveProbeFile( bestProbesAll, new File( "tmp/GMC_" + numProbes + "_design_" + x + ".csv.tmp" ) );
 		}
 
 		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + " FINAL: "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000, min, max, error )[ 0 ] );
