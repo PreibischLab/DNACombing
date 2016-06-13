@@ -1,20 +1,67 @@
 package simulation;
 
+import ij.ImageJ;
+import ij.ImagePlus;
+import ij.ImageStack;
+import ij.process.FloatProcessor;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Random;
 
-import ij.ImageJ;
-import ij.ImagePlus;
-import ij.ImageStack;
-import ij.process.ColorProcessor;
-import ij.process.FloatProcessor;
+import net.imglib2.util.RealSum;
 
 public class TestProbes
 {
 	public static enum MatchResult{ CORRECT, AMBIVALENT, WRONG, NO_MATCH, NOT_ENOUGH_PROBES };
+
+	final private static HashMap< Integer, Double > lookup;
+	final public static boolean useWeighting = true;
+
+	/**
+	 * take care of the most important regions 116.500.000 +/- 250.000 und 116.750.000 - 117.500.000
+	 * 
+	 * @return
+	 */
+	static
+	{
+		lookup = new HashMap< Integer, Double >();
+
+		//min,max: 116.000.000 to 117.991.000
+		final int maxCombingLength = 250000;
+		final int min = 116000000 - maxCombingLength;
+		final int max = 117991000 + maxCombingLength;
+
+		double a = 1;
+		double b1 = 116500000.0;
+		double s1 = 250000*0.75;
+
+		double b2 = 117125000.0;
+		double s2 = 375000*0.75;
+
+		RealSum s = new RealSum();
+
+		for ( int x = min; x <= max; ++x)
+		{
+			final double g = 3 + a * Math.pow( Math.E, -(((x-b1)*(x-b1))/(2*s1*s1)) ) + a * Math.pow( Math.E, -(((x-b2)*(x-b2))/(2*s2*s2)) );
+			
+			s.add( g );
+		}
+
+		final double sum = s.getSum()/(max-min+1.0);
+
+		for ( int x = min; x <= max; ++x)
+		{
+			final double g = 3 + a * Math.pow( Math.E, -(((x-b1)*(x-b1))/(2*s1*s1)) ) + a * Math.pow( Math.E, -(((x-b2)*(x-b2))/(2*s2*s2)) );
+			lookup.put( x, g/sum );
+
+			if ( x % 100000 == 0 )
+				System.out.println( x + "\t" + g/sum );
+		}
+	}
 
 	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final long min, final long max, final double error )
 	{
@@ -66,7 +113,7 @@ public class TestProbes
 		}
 
 		// histogram of how many probes are hit
-		final int[] resultHist = new int[ MatchResult.values().length ];
+		final double[] resultHist = new double[ MatchResult.values().length ];
 
 		for ( int i = 0; i < iterations; ++i )
 		{
@@ -128,7 +175,14 @@ public class TestProbes
 				m = MatchResult.NOT_ENOUGH_PROBES;
 			}
 
-			++resultHist[ m.ordinal() ];
+			final double w;
+
+			if ( useWeighting )
+				w = lookup.get( (int)((l/2) + from) );
+			else
+				w = 1.0;
+
+			resultHist[ m.ordinal() ] += w;
 		}
 
 		//for ( int i = 0; i < containsHist.length; ++i )
@@ -143,7 +197,12 @@ public class TestProbes
 		for ( int i = 0; i < probes.size(); ++i )
 			probes.get( i ).resetTmpId();
 
-		return resultHist;
+		final int[] resultHistInt = new int[ MatchResult.values().length ];
+
+		for ( int i = 0; i < resultHist.length; ++i )
+			resultHistInt[ i ] = (int)Math.round( resultHist[ i ] );
+
+		return resultHistInt;
 	}
 
 	public static MatchResult match( final double[] distGMCs, final double distDetect[], final double maxErrorPx, final int correctMatch, final boolean debug )
@@ -255,7 +314,7 @@ public class TestProbes
 		final ArrayList< CombingProbe > allProbesDouble = DesignMorseCode.loadAllProbesets();
 
 		final int combingLength = 350000;
-		final double error = 30;
+		final double error = 10;
 
 		final long min = DesignMorseCode.min( allProbesDouble );
 		final long max = DesignMorseCode.max( allProbesDouble );
@@ -276,12 +335,12 @@ public class TestProbes
 			
 			final FloatProcessor fp = new FloatProcessor( (int)( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ), 500 );
 	
-			for ( int i = 10; i <= 10; ++i )
+			for ( int i = 27; i <= 30; ++i )
 			{
 				final File f;
 	
-				f = new File( "GMC_" + i + ".csv" );
-				//f = new File( "350k30px/GMC_" + i + "_design.csv" );
+				//f = new File( "GMC_" + i + ".csv" );
+				f = new File( "350k30px/GMC_" + i + "_design.csv" );
 	
 				ArrayList< CombingProbe > probes = CombingProbe.loadFile( f, i );
 		
@@ -301,6 +360,7 @@ public class TestProbes
 			stack.addSlice( fp );
 		}
 
+		/*
 		for ( int j = 0; j < hist.length; ++j )
 		{
 			System.out.print( j*1000 + min );
@@ -310,6 +370,7 @@ public class TestProbes
 
 			System.out.println();
 		}
+		*/
 
 		new ImageJ();
 		new ImagePlus( "probes", stack ).show();
