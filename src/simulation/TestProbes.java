@@ -16,13 +16,15 @@ public class TestProbes
 {
 	public static enum MatchResult{ CORRECT, AMBIVALENT, WRONG, NO_MATCH, NOT_ENOUGH_PROBES };
 
-	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final long min, final long max )
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, final long min, final long max, final double error )
 	{
 		final Random rnd = new Random( 35 );
-		return randomlySample( probes, length, iterations, min, max, rnd );
+		return randomlySample( probes, length, iterations, min, max, error, rnd );
 	}
 
-	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, long min, long max, final Random rnd )
+	public static int[] hist;
+
+	public static int[] randomlySample( final ArrayList< CombingProbe > probes, final long length, final int iterations, long min, long max, final double error, final Random rnd )
 	{
 		Collections.sort( probes );
 
@@ -30,7 +32,6 @@ public class TestProbes
 		for ( int i = 0; i < probes.size(); ++i )
 			probes.get( i ).setTmpId( i + 1 );
 
-		final double error = 10;
 		/*
 		long min = probes.get( 0 ).start();
 		long max = probes.get( 0 ).end();
@@ -41,6 +42,11 @@ public class TestProbes
 			max = Math.max( Math.max( max, p.start() ), p.end() );
 		}
 		*/
+
+		final Random rndLength = new Random( 35 );
+
+		final int origMin = (int)min;
+		hist = new int[ (int)(max-min) / 1000 ];
 
 		// NOT ANYMORE: only consider random segments that contain at least some part of the GMC area
 		min -= length/3;
@@ -64,8 +70,15 @@ public class TestProbes
 
 		for ( int i = 0; i < iterations; ++i )
 		{
-			final long from = Math.round( rnd.nextDouble() * size ) + min;
-			final long to = from + length;
+			long from = Math.round( rnd.nextDouble() * size ) + min;
+			long to = from + length;
+
+			long diff = -Math.round( rndLength.nextGaussian() * (length/15) );
+
+			from -= diff/2;
+			to += diff/2;
+
+			long l = to - from + 1;
 
 			final ArrayList< CombingProbe > contained = new ArrayList< CombingProbe >();
 	
@@ -89,6 +102,15 @@ public class TestProbes
 
 				final double maxError = Math.max( 1, rnd.nextGaussian() * 2 + error );
 				m = match( distGMCs, distDetect, maxError, contained.get( 0 ).id() - 1, false ); // probe ID starts with 1, not 0
+
+				if ( m != MatchResult.CORRECT )
+				{
+					try
+					{
+						++hist[ (int)(((l/2) + from - origMin ) / 1000) ];
+					}
+					catch ( Exception e ){}
+				}
 
 				/*
 				if ( m == MatchResult.AMBIVALENT )
@@ -219,8 +241,6 @@ public class TestProbes
 			int x0 = (int) Math.round( (p.start()-min) / CombingProbe.nucleotidesPerPixel() );
 			int x1 = (int) Math.round( (p.end()-min) / CombingProbe.nucleotidesPerPixel() );
 
-			ColorProcessor cp;
-
 			for ( int x = x0; x <= x1; ++x )
 			{
 				fp.putPixelValue( x, y - 1, 1.0 );
@@ -235,6 +255,7 @@ public class TestProbes
 		final ArrayList< CombingProbe > allProbesDouble = DesignMorseCode.loadAllProbesets();
 
 		final int combingLength = 350000;
+		final double error = 30;
 
 		final long min = DesignMorseCode.min( allProbesDouble );
 		final long max = DesignMorseCode.max( allProbesDouble );
@@ -248,35 +269,48 @@ public class TestProbes
 
 		final ImageStack stack = new ImageStack( (int)( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ), 500 );
 
-		for ( int it = 1; it < 5; ++it )
+		final int[][] histograms = new int[ 50 ][];
+
+		//for ( int it = 1; it < 25; ++it )
 		{
 			
 			final FloatProcessor fp = new FloatProcessor( (int)( Math.round( (maxDraw-minDraw)/CombingProbe.nucleotidesPerPixel() ) + 1 ), 500 );
 	
-			for ( int i = 7; i <= 25; ++i )
+			for ( int i = 10; i <= 10; ++i )
 			{
 				final File f;
 	
-				//f = new File( "GMC_" + i + ".csv" );
-				f = new File( "GMC_" + i + "_design_" + it + ".csv.tmp" );
+				f = new File( "GMC_" + i + ".csv" );
+				//f = new File( "350k30px/GMC_" + i + "_design.csv" );
 	
 				ArrayList< CombingProbe > probes = CombingProbe.loadFile( f, i );
 		
 				Collections.sort( probes );
 		
-				System.out.print( i + "\t" + probes.size() + "\t" );
+				System.out.print( probes.size() + "\t" );
 				
 				//for ( final CombingProbe p : probes )
 				//	System.out.println( p );
 		
-				drawProbes( fp, probes, minDraw, 50 + (i-7)*15 );
+				drawProbes( fp, probes, minDraw, 50 + (i-8)*15 );
 	
-				//System.out.println( randomlySample( probes, combingLength, 100000, min, max )[ 0 ] );
+				System.out.println( randomlySample( probes, combingLength, 1000000, min, max, error )[ 0 ] / 1000000.0 * 100.0 );
+				histograms[ i ] = hist.clone();
 			}
 
 			stack.addSlice( fp );
 		}
-		
+
+		for ( int j = 0; j < hist.length; ++j )
+		{
+			System.out.print( j*1000 + min );
+	
+			for ( int i = 27; i <= 30; i = i + 3 )
+				System.out.print( "\t" + histograms[ i ][ j ] );
+
+			System.out.println();
+		}
+
 		new ImageJ();
 		new ImagePlus( "probes", stack ).show();
 	}
