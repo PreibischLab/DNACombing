@@ -720,9 +720,9 @@ A:			do
 		final ArrayList< Callable< Void > > tasks = new ArrayList< Callable< Void > >(); // your tasks
 
 		final int combingLength = 350000;
-		final double error = 10.0;
+		final double error = 30.0;
 
-		for ( int i = 7; i <= 25; ++i )
+		for ( int i = 25; i <= 30; ++i )
 		{
 			final int j = i;
 
