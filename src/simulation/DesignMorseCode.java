@@ -464,7 +464,7 @@ A:			do
 
 		final Random rnd = new Random( 353 );
 
-		final int combingLength = 350000;
+		final int combingLength = 200000;
 		final double minDistanceProbes = 10.0;
 		final int numIterations = 100000;
 		final int testIterations = 1000;
@@ -622,7 +622,7 @@ A:			do
 				System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + "@it" + x +": "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000, min, max )[ 0 ] );
 
 			//if ( x % 10 == 0 )
-				saveProbeFile( bestProbesAll, new File( "tmp/GMC_" + numProbes + "_design_" + x + ".csv.tmp" ) );
+				//saveProbeFile( bestProbesAll, new File( "tmp/GMC_" + numProbes + "_design_" + x + ".csv.tmp" ) );
 		}
 
 		System.out.println( new Date( System.currentTimeMillis() ) + ", " + numProbes + " FINAL: "  + TestProbes.randomlySample( bestProbesAll, combingLength, 100000, min, max )[ 0 ] );
@@ -720,7 +720,7 @@ A:			do
 		final ExecutorService taskExecutor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
 		final ArrayList< Callable< Void > > tasks = new ArrayList< Callable< Void > >(); // your tasks
 
-		for ( int i = 7; i <= 25; ++i )
+		for ( int i = 15; i <= 30; ++i )
 		{
 			final int j = i;
 
