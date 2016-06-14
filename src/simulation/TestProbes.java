@@ -30,36 +30,39 @@ public class TestProbes
 	{
 		lookup = new HashMap< Integer, Double >();
 
-		//min,max: 116.000.000 to 117.991.000
-		final int maxCombingLength = 250000;
-		final int min = 116000000 - maxCombingLength;
-		final int max = 117991000 + maxCombingLength;
-
-		double a = 1;
-		double b1 = 116500000.0;
-		double s1 = 250000*0.75;
-
-		double b2 = 117125000.0;
-		double s2 = 375000*0.75;
-
-		RealSum s = new RealSum();
-
-		for ( int x = min; x <= max; ++x)
+		if ( useWeighting )
 		{
-			final double g = 3 + a * Math.pow( Math.E, -(((x-b1)*(x-b1))/(2*s1*s1)) ) + a * Math.pow( Math.E, -(((x-b2)*(x-b2))/(2*s2*s2)) );
-			
-			s.add( g );
-		}
+			//min,max: 116.000.000 to 117.991.000
+			final int maxCombingLength = 250000;
+			final int min = 116000000 - maxCombingLength;
+			final int max = 117991000 + maxCombingLength;
 
-		final double sum = s.getSum()/(max-min+1.0);
+			double a = 1;
+			double b1 = 116500000.0;
+			double s1 = 250000*0.75;
 
-		for ( int x = min; x <= max; ++x)
-		{
-			final double g = 3 + a * Math.pow( Math.E, -(((x-b1)*(x-b1))/(2*s1*s1)) ) + a * Math.pow( Math.E, -(((x-b2)*(x-b2))/(2*s2*s2)) );
-			lookup.put( x, g/sum );
+			double b2 = 117125000.0;
+			double s2 = 375000*0.75;
 
-			if ( x % 100000 == 0 )
-				System.out.println( x + "\t" + g/sum );
+			RealSum s = new RealSum();
+
+			for ( int x = min; x <= max; ++x)
+			{
+				final double g = 3 + a * Math.pow( Math.E, -(((x-b1)*(x-b1))/(2*s1*s1)) ) + a * Math.pow( Math.E, -(((x-b2)*(x-b2))/(2*s2*s2)) );
+
+				s.add( g );
+			}
+
+			final double sum = s.getSum()/(max-min+1.0);
+
+			for ( int x = min; x <= max; ++x)
+			{
+				final double g = 3 + a * Math.pow( Math.E, -(((x-b1)*(x-b1))/(2*s1*s1)) ) + a * Math.pow( Math.E, -(((x-b2)*(x-b2))/(2*s2*s2)) );
+				lookup.put( x, g/sum );
+
+				if ( x % 100000 == 0 )
+					System.out.println( x + "\t" + g/sum );
+			}
 		}
 	}
 
@@ -314,7 +317,7 @@ public class TestProbes
 		final ArrayList< CombingProbe > allProbesDouble = DesignMorseCode.loadAllProbesets();
 
 		final int combingLength = 350000;
-		final double error = 10;
+		final double error = 30;
 
 		final long min = DesignMorseCode.min( allProbesDouble );
 		final long max = DesignMorseCode.max( allProbesDouble );
@@ -340,7 +343,7 @@ public class TestProbes
 				final File f;
 	
 				//f = new File( "GMC_" + i + ".csv" );
-				f = new File( "350k30px/GMC_" + i + "_design.csv" );
+				f = new File( "350k30pxWeight/GMC_" + i + "_design.csv" );
 	
 				ArrayList< CombingProbe > probes = CombingProbe.loadFile( f, i );
 		
